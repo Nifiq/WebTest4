@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 require_once __DIR__ . '/config.php';
@@ -7,21 +8,21 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
-if (!function_exists('json_response')) {
-    function json_response(int $statusCode, array $payload): void
-    {
-        http_response_code($statusCode);
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        exit;
+function json_response(array $payload, int $status = 200): void
+{
+    while (ob_get_level() > 0) {
+        ob_end_clean();
     }
+
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
 }
 
-if (!function_exists('e')) {
-    function e(?string $value): string
-    {
-        return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-    }
+function e(?string $value): string
+{
+    return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
 function csrf_token(): string
@@ -29,6 +30,7 @@ function csrf_token(): string
     if (empty($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     }
+
     return (string)$_SESSION['csrf_token'];
 }
 
@@ -40,48 +42,68 @@ function refresh_csrf_token(): string
 
 function require_valid_csrf(): void
 {
-    $postedToken  = (string)($_POST['csrf_token'] ?? '');
-    $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
-    if ($postedToken === '' || $sessionToken === '' || !hash_equals($sessionToken, $postedToken)) {
-        json_response(403, [
-            'ok'         => false,
-            'message'    => 'Ошибка безопасности. Обновите страницу и попробуйте ещё раз.',
-            'csrf_token' => csrf_token(),
-        ]);
+    $token = $_POST['csrf_token'] ?? '';
+
+    if (!is_string($token) || $token === '' || !hash_equals(csrf_token(), $token)) {
+        json_response([
+            'success' => false,
+            'message' => 'Сессия устарела. Обновите страницу и попробуйте ещё раз.',
+            'csrf_token' => refresh_csrf_token(),
+        ], 419);
     }
 }
 
-function generate_user_password(int $bytes = 6): string
+function generate_user_password(int $length = 8): string
 {
-    return substr(bin2hex(random_bytes($bytes)), 0, 12);
+    $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+    $password = '';
+    $max = strlen($alphabet) - 1;
+
+    for ($i = 0; $i < $length; $i++) {
+        $password .= $alphabet[random_int(0, $max)];
+    }
+
+    return $password;
 }
 
-function support_credential_columns(PDO $pdo): ?array
+function support_credential_columns(PDO $pdo): array
 {
-    $stmt = $pdo->query('SHOW COLUMNS FROM support_requests');
-    $columns = [];
-    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        if (isset($row['Field'])) $columns[$row['Field']] = true;
+    static $columns = null;
+
+    if ($columns !== null) {
+        return $columns;
     }
-    if (isset($columns['user_login'], $columns['user_password_hash'])) {
-        return ['login' => 'user_login', 'hash' => 'user_password_hash'];
+
+    $stmt = $pdo->query("SHOW COLUMNS FROM support_requests");
+    $existing = [];
+
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $column) {
+        $existing[$column['Field']] = true;
     }
-    return null;
+
+    $columns = [
+        'login' => isset($existing['user_login']) ? 'user_login' : (isset($existing['login']) ? 'login' : null),
+        'password_hash' => isset($existing['user_password_hash']) ? 'user_password_hash' : (isset($existing['password_hash']) ? 'password_hash' : null),
+    ];
+
+    return $columns;
 }
 
-function safe_user_request_row(array $row): array
+function safe_user_request_row(array $request): array
 {
     return [
-        'id'                => (int)$row['id'],
-        'login'             => (string)($row['user_login'] ?? $row['login'] ?? ''),
-        'name'              => (string)($row['name'] ?? ''),
-        'phone'             => (string)($row['phone'] ?? ''),
-        'email'             => (string)($row['email'] ?? ''),
-        'gender'            => (string)($row['gender'] ?? ''),
-        'preferred_lang_id' => isset($row['preferred_lang_id']) ? (int)$row['preferred_lang_id'] : null,
-        'lang_name'         => (string)($row['lang_name'] ?? ''),
-        'message'           => (string)($row['message'] ?? ''),
-        'created_at'        => (string)($row['created_at'] ?? ''),
-        'updated_at'        => (string)($row['updated_at'] ?? ''),
+        'id' => isset($request['id']) ? (int)$request['id'] : null,
+        'login' => (string)($request['user_login'] ?? $request['login'] ?? ''),
+        'name' => (string)($request['name'] ?? ''),
+        'phone' => (string)($request['phone'] ?? ''),
+        'email' => (string)($request['email'] ?? ''),
+        'request_date' => (string)($request['request_date'] ?? ''),
+        'gender' => (string)($request['gender'] ?? ''),
+        'preferred_lang_id' => isset($request['preferred_lang_id']) ? (int)$request['preferred_lang_id'] : null,
+        'lang_name' => (string)($request['lang_name'] ?? ''),
+        'message' => (string)($request['message'] ?? ''),
+        'personal_data_consent' => isset($request['personal_data_consent']) ? (int)$request['personal_data_consent'] : 0,
+        'created_at' => (string)($request['created_at'] ?? ''),
+        'updated_at' => (string)($request['updated_at'] ?? ''),
     ];
 }

@@ -3333,3 +3333,142 @@ a {
     max-width: 100%;
   }
 }
+/* ── 1. Соцсети в футере: меньше gap ─────────────────────────── */
+.footer-socials {
+  gap: 8px !important;
+}
+
+/* ── 2. Поле с ошибкой ────────────────────────────────────────── */
+.field-invalid {
+  border: 2px solid #e74c3c !important;
+  background-color: rgba(231, 76, 60, 0.06) !important;
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.12) !important;
+}
+/* Маленький inline-текст под полем — не попап, не полная страница */
+.field-err-msg {
+  display: block;
+  color: #e74c3c;
+  font-size: 12px;
+  line-height: 1.4;
+  margin-top: 4px;
+  padding: 3px 8px;
+  background: rgba(231, 76, 60, 0.08);
+  border-left: 3px solid #e74c3c;
+  border-radius: 0 3px 3px 0;
+}
+
+/* ── 3. Дата ──────────────────────────────────────────────────── */
+.field-date-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.field-date-wrap .field-date-lbl {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+  font-weight: 500;
+}
+.webform-form input[type="date"],
+.edit-modal__form input[type="date"] {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  color: inherit;
+}
+
+/* ── 4. Чекбокс согласия ─────────────────────────────────────── */
+.consent-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 14px 0 10px;
+  cursor: pointer;
+}
+.consent-wrap input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  top: 2px;
+  flex-shrink: 0;
+  transition: border-color 0.2s, background 0.2s;
+}
+.consent-wrap input[type="checkbox"]:checked {
+  background: #27ae60;
+  border-color: #27ae60;
+}
+.consent-wrap input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0;
+  width: 8px;
+  height: 12px;
+  border: 2px solid #fff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+.consent-wrap span {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.5;
+}
+.consent-wrap a {
+  color: #fff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.consent-wrap a:hover { opacity: 0.75; }
+
+/* ── 5. Пол: radio в одну строку ─────────────────────────────── */
+/* JS строит label > input[radio] + span; стилизуем */
+.gender-radio-label input[type="radio"] {
+  accent-color: #27ae60;
+  cursor: pointer;
+}
+.gender-radio-label:hover span {
+  color: #fff;
+  opacity: 0.9;
+}
+
+/* ── 6. Языки: вертикальный список radio ─────────────────────── */
+.lang-radio-label input[type="radio"] {
+  accent-color: #27ae60;
+  cursor: pointer;
+}
+.lang-radio-label:hover span {
+  opacity: 0.9;
+}
+/* Скроллбар для длинного списка */
+#lang-chips::-webkit-scrollbar,
+#edit-lang-chips::-webkit-scrollbar { width: 4px; }
+#lang-chips::-webkit-scrollbar-thumb,
+#edit-lang-chips::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.3);
+  border-radius: 4px;
+}
+
+/* ── 7. Статусы ──────────────────────────────────────────────── */
+.status--success {
+  background: rgba(39, 174, 96, 0.15);
+  color: #d4fde4;
+  border: 1px solid rgba(39, 174, 96, 0.35);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+.status--error {
+  background: rgba(231, 76, 60, 0.12);
+  color: #ffe0e0;
+  border: 1px solid rgba(231, 76, 60, 0.35);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 14px;
+}

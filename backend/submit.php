@@ -1,181 +1,107 @@
 <?php
-/**
- * submit.php — обработка формы заявки
- * Поля: name, phone, email, gender, preferred_lang_id, message
- * Создаёт пользователя (user_login / user_password_hash) в той же строке
- */
+declare(strict_types=1);
+session_start();
 
-ob_start();
-ini_set('display_errors', '0');
-error_reporting(E_ALL);
-
-header('Content-Type: application/json; charset=utf-8');
-
-function send_json($status, array $payload): void
-{
-    while (ob_get_level() > 0) ob_end_clean();
-    http_response_code((int)$status);
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-    exit;
-}
-
-register_shutdown_function(function () {
-    $e = error_get_last();
-    if ($e && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR], true)) {
-        send_json(500, ['ok' => false, 'message' => 'Фатальная ошибка PHP.', 'debug' => $e]);
+function db(): PDO {
+    static $pdo = null;
+    if (!$pdo) {
+        $pdo = new PDO(
+            'mysql:host=localhost;dbname=forms_db;charset=utf8mb4',
+            'root', 'Nifi753159Q*',  // ← замените при необходимости
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+             PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8mb4']
+        );
     }
-});
-
-// ── config ──────────────────────────────────────────────────────────────────
-$configPath = __DIR__ . '/config.php';
-if (!file_exists($configPath)) {
-    send_json(500, ['ok' => false, 'message' => 'Не найден config.php.']);
-}
-require_once $configPath;
-
-if (session_status() !== PHP_SESSION_ACTIVE) session_start();
-
-// ── GET: диагностика ─────────────────────────────────────────────────────────
-if (!isset($_SERVER['REQUEST_METHOD']) || $_SERVER['REQUEST_METHOD'] !== 'POST') {
-    send_json(200, [
-        'ok'      => true,
-        'message' => 'submit.php работает. Отправка идёт методом POST.',
-        'session' => session_id(),
-    ]);
+    return $pdo;
 }
 
-// ── CSRF ─────────────────────────────────────────────────────────────────────
-$postedToken  = (string)($_POST['csrf_token'] ?? '');
-$sessionToken = (string)($_SESSION['csrf_token'] ?? '');
-if (!$postedToken || !$sessionToken || !hash_equals($sessionToken, $postedToken)) {
-    send_json(403, [
-        'ok'      => false,
-        'message' => 'Ошибка безопасности. Обновите страницу и попробуйте ещё раз.',
-    ]);
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: ../index.html'); exit();
 }
 
-// ── Чтение и валидация полей ─────────────────────────────────────────────────
-$name    = trim((string)($_POST['name']    ?? ''));
-$phone   = trim((string)($_POST['phone']   ?? ''));
-$email   = trim((string)($_POST['email']   ?? ''));
-$gender  = trim((string)($_POST['gender']  ?? ''));
+// ── Считать поля ──────────────────────────────────────────────────
+$name    = trim($_POST['name']    ?? '');
+$phone   = trim($_POST['phone']   ?? '');
+$email   = trim($_POST['email']   ?? '');
+$date    = trim($_POST['date']    ?? '');
+$gender  = $_POST['gender']       ?? '';
 $langId  = (int)($_POST['preferred_lang_id'] ?? 0);
-$message = trim((string)($_POST['message'] ?? ''));
+$message = trim($_POST['message'] ?? '');
+$consent = isset($_POST['consent']) ? 1 : 0;
+// Капча: $_POST['g-recaptcha-response'] — НАМЕРЕННО НЕ ПРОВЕРЯЕМ
 
+// ── Валидация ─────────────────────────────────────────────────────
 $errors = [];
 
-if ($name === '') {
-    $errors['name'] = 'Не заполнено поле «Ваше имя».';
-} elseif (!preg_match('/^[\p{L}\s\-]{2,150}$/u', $name)) {
-    $errors['name'] = 'Введите корректное имя: только буквы, пробелы и дефис.';
+if (mb_strlen($name) < 2) {
+    $errors['name'] = 'Введите имя (минимум 2 символа)';
+}
+if (!preg_match('/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/', $email)) {
+    $errors['email'] = 'Введите корректный email — только латинские буквы, например: name@domain.ru';
+}
+if (!$consent) {
+    $errors['consent'] = 'Необходимо дать согласие на обработку персональных данных';
 }
 
-if ($phone === '') {
-    $errors['phone'] = 'Не заполнено поле «Телефон».';
-} elseif (!preg_match('/^\+?[0-9\s\-()]{7,25}$/', $phone)) {
-    $errors['phone'] = 'Введите корректный телефон.';
-}
-
-if ($email === '') {
-    $errors['email'] = 'Не заполнено поле «E-mail».';
-} elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    $errors['email'] = 'Введите корректный E-mail.';
-}
-
-if (!in_array($gender, ['male', 'female'], true)) {
-    $errors['gender'] = 'Выберите пол.';
-}
-
-if ($langId <= 0) {
-    $errors['preferred_lang_id'] = 'Выберите любимый язык программирования.';
-}
-
-$msgLen = function_exists('mb_strlen') ? mb_strlen($message, 'UTF-8') : strlen($message);
-if ($msgLen > 2000) {
-    $errors['message'] = 'Комментарий слишком длинный. Максимум 2000 символов.';
-}
-
+// ── Ошибки → куки → редирект обратно ────────────────────────────
 if ($errors) {
-    send_json(422, [
-        'ok'      => false,
-        'message' => 'Заполните обязательные поля формы.',
-        'errors'  => $errors,
-    ]);
+    $old = compact('name','phone','email','date','gender','message');
+    setcookie('form_errors', json_encode($errors, JSON_UNESCAPED_UNICODE), 0, '/');
+    setcookie('form_old',    json_encode($old,    JSON_UNESCAPED_UNICODE), 0, '/');
+    header('Location: ../index.html'); exit();
 }
 
-// ── Запись в БД ───────────────────────────────────────────────────────────────
-try {
-    $pdo = db();
+// ── IP ────────────────────────────────────────────────────────────
+$ip = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '')[0];
+$ip = trim($ip);
 
-    // Проверяем, что язык существует
-    $stmtLang = $pdo->prepare('SELECT id, name FROM programming_languages WHERE id = :id LIMIT 1');
-    $stmtLang->execute([':id' => $langId]);
-    $langRow = $stmtLang->fetch();
-    if (!$langRow) {
-        send_json(422, ['ok' => false, 'message' => 'Выбранный язык не найден.', 'errors' => ['preferred_lang_id' => 'Недопустимое значение.']]);
+// ── Логин пользователя (из сессии) ───────────────────────────────
+$userLogin = $_SESSION['login'] ?? null;
+
+try {
+    $db = db();
+
+    // Если пользователь залогинен — обновляем его заявку
+    if (!empty($_SESSION['user_id'])) {
+        $db->prepare("
+            UPDATE applications
+            SET name=?, phone=?, email=?, gender=?, message=?, desired_date=?
+            WHERE id=?
+        ")->execute([$name, $phone, $email, $gender ?: null, $message, $date ?: null, (int)$_SESSION['user_id']]);
+        $appId = (int)$_SESSION['user_id'];
+    } else {
+        // Генерируем логин/пароль для нового пользователя
+        $login    = 'user_' . bin2hex(random_bytes(4));
+        $password = bin2hex(random_bytes(5));
+        $passHash = password_hash($password, PASSWORD_DEFAULT);
+
+        $db->prepare("
+            INSERT INTO applications (name, phone, email, gender, message, desired_date, ip_address, login, password_hash, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        ")->execute([$name, $phone, $email, $gender ?: null, $message, $date ?: null, $ip, $login, $passHash]);
+        $appId = (int)$db->lastInsertId();
+
+        // Отдаём логин/пароль через куки (один раз)
+        setcookie('auth_login',    $login,    time() + 120, '/');
+        setcookie('auth_password', $password, time() + 120, '/');
     }
 
-    $pdo->beginTransaction();
+    // Язык программирования
+    $db->prepare("DELETE FROM application_languages WHERE application_id=?")->execute([$appId]);
+    if ($langId > 0) {
+        $db->prepare("INSERT INTO application_languages (application_id, language_id) VALUES (?,?)")
+           ->execute([$appId, $langId]);
+    }
 
-    $stmt = $pdo->prepare(
-        'INSERT INTO support_requests
-            (name, phone, email, gender, preferred_lang_id, message, created_at)
-         VALUES
-            (:name, :phone, :email, :gender, :lang, :message, NOW())'
-    );
-    $stmt->execute([
-        ':name'   => $name,
-        ':phone'  => $phone,
-        ':email'  => $email,
-        ':gender' => $gender,
-        ':lang'   => $langId,
-        ':message' => $message,
-    ]);
+    // Очистить куки ошибок, установить успех
+    setcookie('form_errors', '', time()-3600, '/');
+    setcookie('form_old',    '', time()-3600, '/');
+    setcookie('form_success','1', time()+60, '/');
 
-    $requestId     = (int)$pdo->lastInsertId();
-    $login         = 'user' . $requestId;
-    $plainPassword = generatePassword(12);
-    $passwordHash  = password_hash($plainPassword, PASSWORD_DEFAULT);
+    header('Location: ../index.html'); exit();
 
-    $pdo->prepare(
-        'UPDATE support_requests
-         SET user_login = :login, user_password_hash = :hash
-         WHERE id = :id'
-    )->execute([
-        ':login' => $login,
-        ':hash'  => $passwordHash,
-        ':id'    => $requestId,
-    ]);
-
-    $pdo->commit();
-
-    // Обновляем CSRF
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-
-    send_json(200, [
-        'ok'         => true,
-        'message'    => 'Спасибо! Заявка отправлена. Сохраните логин и пароль.',
-        'request_id' => $requestId,
-        'login'      => $login,
-        'password'   => $plainPassword,
-        'csrf_token' => $_SESSION['csrf_token'],
-    ]);
-} catch (Throwable $e) {
-    if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) $pdo->rollBack();
-    error_log('submit.php error: ' . $e->getMessage());
-    send_json(500, [
-        'ok'      => false,
-        'message' => 'Ошибка сервера при сохранении заявки.',
-        'debug'   => ['error' => $e->getMessage()],
-    ]);
-}
-
-function generatePassword(int $len = 12): string
-{
-    $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
-    $max   = strlen($chars) - 1;
-    $out   = '';
-    for ($i = 0; $i < $len; $i++) $out .= $chars[random_int(0, $max)];
-    return $out;
+} catch (PDOException $e) {
+    http_response_code(500);
+    echo 'Ошибка БД: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
 }

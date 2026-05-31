@@ -9,7 +9,7 @@
  */
 
 const DB_HOST = 'localhost';
-const DB_NAME = 'webproj8';
+const DB_NAME = 'forms_db2';
 const DB_USER = 'root';
 const DB_PASS = 'Nifi753159Q*';
 
