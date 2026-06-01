@@ -1,8 +1,3 @@
-// =====================================================
-// MAIN UI: mobile menu + reviews + backend integration
-// Подходит для страницы /katalog_zadaniya_8/
-// =====================================================
-
 (function () {
   'use strict';
 
