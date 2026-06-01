@@ -5,131 +5,109 @@ declare(strict_types=1);
 require_once __DIR__ . '/request_helpers.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    json_response([
-        'success' => false,
-        'message' => 'Метод запроса не поддерживается.',
+    json_response(405, [
+        'ok' => false,
+        'message' => 'Метод не поддерживается.',
+    ]);
+}
+
+$requestId = (int)($_SESSION['user_request_id'] ?? 0);
+
+if ($requestId <= 0) {
+    json_response(401, [
+        'ok' => false,
+        'message' => 'Сначала войдите по логину и паролю.',
         'csrf_token' => csrf_token(),
-    ], 405);
+    ]);
 }
 
 require_valid_csrf();
 
-$requestId = isset($_SESSION['user_request_id']) ? (int)$_SESSION['user_request_id'] : 0;
-
-if ($requestId <= 0) {
-    json_response([
-        'success' => false,
-        'message' => 'Сначала войдите под логином пользователя.',
-        'csrf_token' => refresh_csrf_token(),
-    ], 401);
-}
-
-$name = trim((string)($_POST['name'] ?? ''));
-$phone = trim((string)($_POST['phone'] ?? ''));
-$email = trim((string)($_POST['email'] ?? ''));
-$requestDate = trim((string)($_POST['request_date'] ?? ''));
-$gender = trim((string)($_POST['gender'] ?? ''));
-$langId = isset($_POST['preferred_lang_id']) ? (int)$_POST['preferred_lang_id'] : 0;
-$message = trim((string)($_POST['message'] ?? ''));
-
-$errors = [];
-
-if ($name === '') {
-    $errors['name'] = 'Введите имя.';
-}
-
-if ($phone === '') {
-    $errors['phone'] = 'Введите телефон.';
-}
-
-if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    $errors['email'] = 'Неправильно введена почта.';
-}
-
-$dateObject = DateTime::createFromFormat('Y-m-d', $requestDate);
-if ($requestDate === '' || !$dateObject || $dateObject->format('Y-m-d') !== $requestDate) {
-    $errors['request_date'] = 'Выберите корректную дату.';
-}
-
-if (!in_array($gender, ['male', 'female'], true)) {
-    $errors['gender'] = 'Выберите пол.';
-}
-
-if ($langId <= 0) {
-    $errors['preferred_lang_id'] = 'Выберите язык программирования.';
-}
-
-if ($message === '') {
-    $errors['message'] = 'Введите комментарий.';
-}
+$data = request_input();
+$errors = validate_request_input($data);
 
 try {
     $pdo = db();
 
-    if ($langId > 0) {
-        $stmt = $pdo->prepare('SELECT id FROM programming_languages WHERE id = :id LIMIT 1');
-        $stmt->execute([':id' => $langId]);
-
-        if (!$stmt->fetchColumn()) {
-            $errors['preferred_lang_id'] = 'Выберите язык из списка.';
-        }
+    if (!$errors && !programming_language_exists($pdo, (int)$data['programming_language_id'])) {
+        $errors['programming_language_id'] = 'Выберите язык программирования из списка.';
     }
 
     if ($errors) {
-        json_response([
-            'success' => false,
-            'message' => 'Проверьте поля формы.',
+        json_response(422, [
+            'ok' => false,
+            'message' => 'Заполните обязательные поля формы.',
             'errors' => $errors,
             'csrf_token' => csrf_token(),
-        ], 422);
+        ]);
     }
 
-    $stmt = $pdo->prepare(
-        'UPDATE support_requests
-         SET request_date = :request_date,
-             name = :name,
-             phone = :phone,
-             email = :email,
-             gender = :gender,
-             preferred_lang_id = :preferred_lang_id,
-             message = :message,
-             updated_at = NOW()
-         WHERE id = :id'
-    );
+    $columns = support_table_columns($pdo);
+    foreach (['name', 'phone', 'email', 'request_date', 'gender', 'programming_language_id'] as $requiredColumn) {
+        if (!isset($columns[$requiredColumn])) {
+            json_response(500, [
+                'ok' => false,
+                'message' => 'В таблице support_requests не хватает обязательной колонки: ' . $requiredColumn,
+                'csrf_token' => csrf_token(),
+            ]);
+        }
+    }
 
-    $stmt->execute([
-        ':request_date' => $requestDate,
-        ':name' => $name,
-        ':phone' => $phone,
-        ':email' => $email,
-        ':gender' => $gender,
-        ':preferred_lang_id' => $langId,
-        ':message' => $message,
+    $setParts = [
+        'name = :name',
+        'phone = :phone',
+        'email = :email',
+        'request_date = :request_date',
+        'gender = :gender',
+        'programming_language_id = :programming_language_id',
+    ];
+
+    $params = [
+        ':name' => $data['name'],
+        ':phone' => $data['phone'],
+        ':email' => $data['email'],
+        ':request_date' => $data['request_date'],
+        ':gender' => $data['gender'],
+        ':programming_language_id' => $data['programming_language_id'],
         ':id' => $requestId,
-    ]);
+    ];
 
-    $stmt = $pdo->prepare(
-        'SELECT sr.*, pl.name AS lang_name
-         FROM support_requests sr
-         LEFT JOIN programming_languages pl ON pl.id = sr.preferred_lang_id
-         WHERE sr.id = :id
-         LIMIT 1'
-    );
+    if (isset($columns['message'])) {
+        $setParts[] = 'message = :message';
+        $params[':message'] = $data['message'];
+    }
+
+    if (isset($columns['consent'])) {
+        $setParts[] = 'consent = 1';
+    }
+
+    if (isset($columns['personal_data_consent'])) {
+        $setParts[] = 'personal_data_consent = 1';
+    }
+
+    if (isset($columns['updated_at'])) {
+        $setParts[] = 'updated_at = NOW()';
+    }
+
+    $stmt = $pdo->prepare('UPDATE support_requests SET ' . implode(', ', $setParts) . ' WHERE id = :id');
+    $stmt->execute($params);
+
+    $stmt = $pdo->prepare('SELECT * FROM support_requests WHERE id = :id LIMIT 1');
     $stmt->execute([':id' => $requestId]);
-    $request = $stmt->fetch(PDO::FETCH_ASSOC);
+    $request = $stmt->fetch();
 
-    json_response([
-        'success' => true,
-        'message' => 'Заявка обновлена.',
-        'request' => safe_user_request_row($request ?: []),
+    json_response(200, [
+        'ok' => true,
+        'message' => 'Заявка успешно обновлена.',
+        'request' => $request ? safe_user_request_row($request) : null,
         'csrf_token' => refresh_csrf_token(),
     ]);
-} catch (Throwable $exception) {
-    error_log('[user_update.php] ' . $exception->getMessage());
-
-    json_response([
-        'success' => false,
-        'message' => 'Не удалось сохранить изменения. Попробуйте ещё раз позже.',
-        'csrf_token' => refresh_csrf_token(),
-    ], 500);
+} catch (Throwable $e) {
+    error_log('User update error: ' . $e->getMessage());
+    json_response(500, [
+        'ok' => false,
+        'message' => 'Ошибка сервера при обновлении заявки.',
+        'debug' => ['error' => $e->getMessage()],
+        'csrf_token' => csrf_token(),
+    ]);
 }

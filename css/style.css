@@ -2650,825 +2650,416 @@ a {
 .webform-form input[type="hidden"] {
   display: none;
 }
+
 /* =====================================================
-   ФОРМА v2: ТАБЫ + ГЕНДЕР + ЯЗЫКИ + МОДАЛКА
-   Добавить в конец style.css
+   Переключатель формы: Регистрация / Вход / Админ
+   Добавлено для Test3: все действия открываются кнопками в зоне формы.
 ===================================================== */
-
-/* ── Общая структура webform (переопределяет старую) ── */
-.webform {
-  background-color: #080808;
-  color: #fff;
-  padding: 80px 0 0;
-  overflow: hidden;
-}
-
-.webform-inner {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 48px;
-}
-
-/* Левая и правая части (мобиль: одна колонка) */
-.webform-left,
-.webform-right {
+.webform-switcher {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
   width: 100%;
+  margin: 0 0 18px;
 }
 
-/* ── Вкладки (tabs) ─────────────────────────────────── */
-.form-tabs {
-  display: flex;
-  gap: 0;
-  margin-top: 36px;
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1.5px solid rgba(255,255,255,0.15);
-  width: 100%;
-  max-width: 360px;
-}
-
-.form-tab {
-  flex: 1;
-  padding: 13px 10px;
-  background: transparent;
-  border: none;
-  color: rgba(255,255,255,0.55);
-  font-family: var(--font-main);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.22s, color 0.22s;
-  letter-spacing: 0.03em;
-  position: relative;
-}
-
-.form-tab + .form-tab {
-  border-left: 1.5px solid rgba(255,255,255,0.15);
-}
-
-.form-tab--active {
-  background: #ff5722;
-  color: #fff;
-}
-
-.form-tab:not(.form-tab--active):hover {
-  background: rgba(255, 87, 34, 0.18);
-  color: #ff5722;
-}
-
-/* ── Панели вкладок ─────────────────────────────────── */
-.tab-panel[hidden] {
-  display: none !important;
-}
-
-.tab-panel {
-  animation: tabFadeIn 0.22s ease;
-}
-
-@keyframes tabFadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ── Поле + обёртка ─────────────────────────────────── */
-.field-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 14px;
-}
-
-.field-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.7);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.field-error-text {
-  font-size: 13px;
-  color: #fca5a5;
-  line-height: 1.4;
-}
-
-/* ── Гендер-кнопки ──────────────────────────────────── */
-.gender-selector {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.gender-btn {
-  display: flex;
+.webform-switcher-button {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 28px;
-  background: transparent;
-  border: 1.5px solid rgba(255,255,255,0.25);
-  border-radius: 10px;
-  color: rgba(255,255,255,0.7);
-  font-family: var(--font-main);
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.gender-icon {
-  font-size: 18px;
-  line-height: 1;
-}
-
-.gender-btn:hover {
-  border-color: #ff5722;
+  justify-content: center;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, .22);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .08);
   color: #fff;
-}
-
-.gender-btn[aria-pressed="true"],
-.gender-btn.is-selected {
-  background: #ff5722;
-  border-color: #ff5722;
-  color: #fff;
-}
-
-.gender-selector.has-error .gender-btn {
-  border-color: #ef4444;
-}
-
-/* ── Чипы языков ────────────────────────────────────── */
-.lang-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.lang-chips-loading {
-  color: rgba(255,255,255,0.4);
-  font-size: 13px;
-}
-
-.lang-chip {
-  padding: 8px 16px;
-  background: transparent;
-  border: 1.5px solid rgba(255,255,255,0.2);
-  border-radius: 999px;
-  color: rgba(255,255,255,0.65);
-  font-family: var(--font-main);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.18s ease;
-  white-space: nowrap;
-}
-
-.lang-chip:hover {
-  border-color: #ff5722;
-  color: #fff;
-}
-
-.lang-chip.is-selected {
-  background: #ff5722;
-  border-color: #ff5722;
-  color: #fff;
-}
-
-.lang-chips.has-error .lang-chip:not(.is-selected) {
-  border-color: #ef4444;
-}
-
-/* ── Форма заявки (поля) ───────────────────────────── */
-.webform-form input[type="text"],
-.webform-form input[type="tel"],
-.webform-form input[type="email"],
-.webform-form textarea {
-  width: 100%;
-  box-sizing: border-box;
-  background: transparent;
-  border: 1.5px solid rgba(255,255,255,0.2);
-  border-radius: 10px;
-  padding: 16px 18px;
-  color: #fff;
-  font-family: var(--font-main);
-  font-size: 16px;
-  transition: border-color 0.2s;
-}
-
-.webform-form input:focus,
-.webform-form textarea:focus {
-  outline: none;
-  border-color: #ff5722;
-}
-
-.webform-form input::placeholder,
-.webform-form textarea::placeholder {
-  color: rgba(255,255,255,0.35);
-}
-
-.webform-form input.webform-field-error,
-.webform-form textarea.webform-field-error {
-  border-color: #ef4444;
-  box-shadow: 0 0 0 2px rgba(239,68,68,0.2);
-}
-
-/* ── Сообщение формы ────────────────────────────────── */
-.webform-message {
-  padding: 14px 18px;
-  border-radius: 10px;
-  font-size: 15px;
-  line-height: 1.45;
-  font-weight: 500;
-  margin-bottom: 16px;
-}
-
-.webform-message--success {
-  background: #052e16;
-  border: 1px solid #16a34a;
-  color: #86efac;
-}
-
-.webform-message--error {
-  background: #450a0a;
-  border: 1px solid #dc2626;
-  color: #fca5a5;
-}
-
-.webform-error-text {
-  font-size: 13px;
-  color: #fca5a5;
-  margin-top: 4px;
-  line-height: 1.4;
-}
-
-/* ── Кнопка отправки ────────────────────────────────── */
-.webform-button {
-  width: 100%;
-  padding: 18px 24px;
-  background: #ff5722;
-  border: none;
-  border-radius: 10px;
-  color: #fff;
-  font-family: var(--font-main);
-  font-size: 16px;
+  font-family: inherit;
+  font-size: 14px;
   font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+  text-decoration: none;
   cursor: pointer;
-  letter-spacing: 0.04em;
-  transition: opacity 0.2s, transform 0.15s;
-  margin-top: 8px;
+  transition: background .2s ease, border-color .2s ease, transform .2s ease, box-shadow .2s ease;
 }
 
-.webform-button:hover {
-  opacity: 0.9;
+.webform-switcher-button:hover,
+.webform-switcher-button:focus-visible {
+  background: rgba(255, 87, 34, .24);
+  border-color: rgba(255, 87, 34, .85);
+  color: #fff;
+  outline: none;
   transform: translateY(-1px);
 }
 
-.webform-button:disabled {
-  opacity: 0.55;
-  cursor: wait;
-  transform: none;
-}
-
-/* ── Панель входа ───────────────────────────────────── */
-.login-panel {
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.login-panel__title {
-  font-size: 22px;
-  font-weight: 700;
-  margin: 0;
-}
-
-.login-panel__hint {
-  font-size: 15px;
-  color: rgba(255,255,255,0.65);
-  margin: 0;
-  line-height: 1.5;
-}
-
-.login-panel__status {
-  padding: 12px 16px;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.login-panel__status.is-error {
-  background: #450a0a;
-  border: 1px solid #dc2626;
-  color: #fca5a5;
-}
-
-.login-panel__status.is-success {
-  background: #052e16;
-  border: 1px solid #16a34a;
-  color: #86efac;
-}
-
-.login-form input[type="text"],
-.login-form input[type="password"] {
-  width: 100%;
-  box-sizing: border-box;
-  background: transparent;
-  border: 1.5px solid rgba(255,255,255,0.2);
-  border-radius: 10px;
-  padding: 16px 18px;
-  color: #fff;
-  font-family: var(--font-main);
-  font-size: 16px;
-  transition: border-color 0.2s;
-}
-
-.login-form input:focus {
-  outline: none;
-  border-color: #ff5722;
-}
-
-.login-form input::placeholder {
-  color: rgba(255,255,255,0.35);
-}
-
-.logout-btn {
-  background: transparent;
-  border: 1.5px solid rgba(255,255,255,0.25);
-  border-radius: 10px;
-  color: rgba(255,255,255,0.7);
-  padding: 13px 20px;
-  font-family: var(--font-main);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.logout-btn:hover {
-  border-color: #ff5722;
-  color: #ff5722;
-}
-
-.login-panel__small {
-  font-size: 13px;
-  color: rgba(255,255,255,0.4);
-  margin: 0;
-  line-height: 1.5;
-}
-
-/* ── Панель Админ (вкладка) ─────────────────────────── */
-.admin-tab-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 32px 0;
-}
-
-.admin-tab-panel__title {
-  font-size: 22px;
-  font-weight: 700;
-  margin: 0;
-  color: #fff;
-}
-
-.admin-tab-panel__hint {
-  font-size: 15px;
-  color: rgba(255,255,255,0.65);
-  margin: 0;
-  line-height: 1.5;
-}
-
-.admin-panel-goto {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 16px 28px;
-  background: transparent;
-  border: 2px solid #ff5722;
-  border-radius: 10px;
-  color: #ff5722;
-  font-family: var(--font-main);
-  font-size: 16px;
-  font-weight: 700;
-  text-decoration: none;
-  transition: all 0.2s;
-  width: fit-content;
-}
-
-.admin-panel-goto:hover {
+.webform-switcher-button.is-active {
   background: #ff5722;
+  border-color: #ff5722;
   color: #fff;
+  box-shadow: 0 10px 24px rgba(255, 87, 34, .24);
 }
 
-/* ── Данные авторизации после отправки ──────────────── */
-.webform-auth-data {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 12px;
-}
-
-.webform-auth-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  background: rgba(255,255,255,0.08);
-  padding: 10px 14px;
-  border-radius: 8px;
-}
-
-.webform-auth-value {
-  font-family: Consolas, Monaco, monospace;
-  font-weight: 700;
-  word-break: break-all;
-  color: #fff;
-}
-
-.webform-copy-button {
-  padding: 6px 12px;
-  background: #ff5722;
-  border: none;
-  border-radius: 999px;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.webform-copy-button:hover {
-  opacity: 0.85;
-}
-
-/* ── Разделитель и футер ────────────────────────────── */
-.webform-divider {
-  width: 100%;
-  height: 1px;
-  background: rgba(255,255,255,0.12);
-  margin: 60px 0 40px;
-}
-
-/* =====================================================
-   МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ
-===================================================== */
-.edit-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 9000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-}
-
-.edit-modal[hidden] {
+.webform-panel[hidden] {
   display: none !important;
 }
 
-.edit-modal__backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(4px);
-}
-
-.edit-modal__box {
-  position: relative;
-  z-index: 1;
-  background: #111827;
-  border: 1.5px solid rgba(255,255,255,0.12);
-  border-radius: 20px;
-  padding: 36px 40px;
+.webform-user-login.webform-panel {
   width: 100%;
-  max-width: 620px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 32px 80px rgba(0,0,0,0.6);
-  animation: modalSlideIn 0.25s ease;
-}
-
-@keyframes modalSlideIn {
-  from { opacity: 0; transform: scale(0.94) translateY(16px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-.edit-modal__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
-}
-
-.edit-modal__title {
-  font-size: 22px;
-  font-weight: 700;
-  color: #fff;
+  max-width: none;
+  box-sizing: border-box;
   margin: 0;
+  padding: 22px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .08);
+  border: 1px solid rgba(255, 255, 255, .18);
 }
 
-.edit-modal__close {
-  background: rgba(255,255,255,0.08);
-  border: none;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background 0.2s;
-  flex-shrink: 0;
+.webform-user-login h3 {
+  margin: 0 0 10px;
+  font-size: 22px;
+  line-height: 1.25;
 }
 
-.edit-modal__close:hover {
-  background: rgba(255,87,34,0.3);
+.webform-user-login p {
+  margin: 0 0 16px;
+  color: #d1d5db;
+  font-size: 15px;
+  line-height: 1.45;
 }
 
-.edit-modal__message {
-  padding: 12px 16px;
-  border-radius: 10px;
-  font-size: 14px;
-  margin-bottom: 16px;
+.webform-user-login-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
 }
 
-.edit-modal__message.is-success {
-  background: #052e16;
-  border: 1px solid #16a34a;
-  color: #86efac;
-}
-
-.edit-modal__message.is-error {
-  background: #450a0a;
-  border: 1px solid #dc2626;
-  color: #fca5a5;
-}
-
-.edit-modal__form input[type="text"],
-.edit-modal__form input[type="tel"],
-.edit-modal__form input[type="email"],
-.edit-modal__form textarea {
+.webform-user-login input {
   width: 100%;
   box-sizing: border-box;
-  background: rgba(255,255,255,0.05);
-  border: 1.5px solid rgba(255,255,255,0.15);
-  border-radius: 10px;
-  padding: 14px 16px;
-  color: #fff;
-  font-family: var(--font-main);
-  font-size: 15px;
-  transition: border-color 0.2s;
-}
-
-.edit-modal__form input:focus,
-.edit-modal__form textarea:focus {
-  outline: none;
-  border-color: #ff5722;
-}
-
-.edit-modal__form input.webform-field-error,
-.edit-modal__form textarea.webform-field-error {
-  border-color: #ef4444;
-}
-
-.edit-modal__footer {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-top: 8px;
-  flex-wrap: wrap;
-}
-
-.edit-modal__save {
-  flex: 1;
-  min-width: 180px;
-}
-
-.edit-modal__cancel {
   background: transparent;
-  border: 1.5px solid rgba(255,255,255,0.2);
+  border: 1px solid #374151;
   border-radius: 10px;
-  color: rgba(255,255,255,0.6);
-  padding: 16px 24px;
-  font-family: var(--font-main);
+  padding: 18px 20px;
+  color: #fff;
+  font: inherit;
+  font-size: 17px;
+}
+
+.webform-user-login input::placeholder {
+  color: #d8d3d3;
+}
+
+.webform-login-button,
+.webform-logout-button {
+  border: 0;
+  border-radius: 10px;
+  padding: 16px 18px;
+  background: #ff5722;
+  color: #fff;
+  font-family: inherit;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
 }
 
-.edit-modal__cancel:hover {
-  border-color: #ff5722;
-  color: #ff5722;
+.webform-login-button:hover,
+.webform-logout-button:hover {
+  opacity: .9;
 }
 
-/* Внутри модалки: те же chip/gender стили, но поверх тёмного bg */
-.edit-modal__box .gender-btn,
-.edit-modal__box .lang-chip {
-  /* наследуют базовые стили */
+.webform-logout-button {
+  width: 100%;
+  margin-top: 12px;
+  background: #2b2b2b;
 }
+
+.webform-login-status {
+  margin-top: 12px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.webform-login-status.is-error {
+  color: #ffd2d2;
+}
+
+.webform-login-status.is-success {
+  color: #d7ffd7;
+}
+
+@media (min-width: 1024px) {
+  .webform-switcher {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .webform-form.webform-panel,
+  .webform-user-login.webform-panel {
+    grid-column: 2;
+    grid-row: 2 / span 3;
+  }
+
+  .webform-form.webform-panel {
+    align-self: start;
+  }
+
+  .webform-user-login-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .webform-login-button {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 520px) {
+  .webform-switcher {
+    grid-template-columns: 1fr;
+  }
+
+  .webform-switcher-button {
+    min-height: 44px;
+  }
+}
+
 
 /* =====================================================
-   ДЕСКТОП: двухколоночный лейаут webform
+   Новые поля заявки: дата рождения, пол, язык программирования
 ===================================================== */
-@media (min-width: 1024px) {
-  .webform-inner {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    column-gap: 64px;
-    align-items: start;
-    padding: 0 48px;
-  }
-
-  .webform-left {
-    position: sticky;
-    top: 32px;
-  }
-
-  .webform-right {
-    padding-top: 8px;
-  }
-
-  /* Табы — только на десктопе виден весь блок */
-  .form-tabs {
-    display: flex;
-  }
-}
-
-@media (max-width: 1023px) {
-  /* На мобиле скрываем табы и всегда показываем все панели стекой */
-  .form-tabs {
-    display: none;
-  }
-
-  /* На мобиле все панели показаны без скрытия (упрощаем UX) */
-  .tab-panel[hidden] {
-    display: block !important;
-  }
-
-  .tab-panel + .tab-panel {
-    margin-top: 40px;
-    padding-top: 32px;
-    border-top: 1px solid rgba(255,255,255,0.1);
-  }
-
-  .edit-modal__box {
-    padding: 28px 20px;
-  }
-}
-
-@media (max-width: 480px) {
-  .gender-btn {
-    padding: 12px 20px;
-    font-size: 14px;
-  }
-
-  .form-tabs {
-    max-width: 100%;
-  }
-}
-/* ── 1. Соцсети в футере: меньше gap ─────────────────────────── */
-.footer-socials {
-  gap: 8px !important;
-}
-
-/* ── 2. Поле с ошибкой ────────────────────────────────────────── */
-.field-invalid {
-  border: 2px solid #e74c3c !important;
-  background-color: rgba(231, 76, 60, 0.06) !important;
-  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.12) !important;
-}
-/* Маленький inline-текст под полем — не попап, не полная страница */
-.field-err-msg {
-  display: block;
-  color: #e74c3c;
-  font-size: 12px;
-  line-height: 1.4;
-  margin-top: 4px;
-  padding: 3px 8px;
-  background: rgba(231, 76, 60, 0.08);
-  border-left: 3px solid #e74c3c;
-  border-radius: 0 3px 3px 0;
-}
-
-/* ── 3. Дата ──────────────────────────────────────────────────── */
-.field-date-wrap {
+.webform-field {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-}
-.field-date-wrap .field-date-lbl {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.65);
-  font-weight: 500;
-}
-.webform-form input[type="date"],
-.edit-modal__form input[type="date"] {
-  appearance: none;
-  -webkit-appearance: none;
-  cursor: pointer;
-  color: inherit;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  color: #fff;
 }
 
-/* ── 4. Чекбокс согласия ─────────────────────────────────────── */
-.consent-wrap {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin: 14px 0 10px;
+.webform-field > span,
+.webform-field legend {
+  font-size: 15px;
+  font-weight: 700;
+  color: #e5e7eb;
+}
+
+.webform-field select,
+.webform-field input[type="date"] {
+  width: 100%;
+  box-sizing: border-box;
+  background: #080808;
+  border: 1px solid #374151;
+  padding: 18px 22px;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 500;
+  border-radius: 10px;
+  font-family: inherit;
+}
+
+.webform-field select:disabled {
+  opacity: .7;
+  cursor: wait;
+}
+
+.webform-field select option {
+  color: #111827;
+  background: #fff;
+}
+
+.webform-field input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
   cursor: pointer;
 }
-.consent-wrap input[type="checkbox"] {
-  appearance: none;
-  -webkit-appearance: none;
+
+.webform-radio-field {
+  border: 1px solid #374151;
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+.webform-radio-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.webform-radio-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .06);
+  color: #fff;
+  cursor: pointer;
+}
+
+.webform-form .webform-radio-option input[type="radio"] {
   width: 18px;
   height: 18px;
   min-width: 18px;
-  border: 2px solid rgba(255, 255, 255, 0.55);
-  border-radius: 4px;
-  background: transparent;
+  margin: 0;
+  padding: 0;
+  accent-color: #ff5722;
   cursor: pointer;
-  position: relative;
-  top: 2px;
-  flex-shrink: 0;
-  transition: border-color 0.2s, background 0.2s;
 }
-.consent-wrap input[type="checkbox"]:checked {
-  background: #27ae60;
-  border-color: #27ae60;
+
+.webform-form .webform-radio-field.webform-field-error {
+  border-color: #ef4444 !important;
 }
-.consent-wrap input[type="checkbox"]:checked::after {
-  content: '';
+
+@media (max-width: 520px) {
+  .webform-radio-group {
+    grid-template-columns: 1fr;
+  }
+}
+
+.webform-form .webform-radio-option input[type="radio"] {
+  border: 0;
+  box-shadow: none;
+}
+
+
+/* =====================================================
+   Модальное окно редактирования заявки после входа
+===================================================== */
+.webform-open-edit-modal-button {
+  width: 100%;
+  margin-top: 12px;
+  border: 0;
+  border-radius: 10px;
+  padding: 16px 18px;
+  background: #ff5722;
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.webform-open-edit-modal-button:hover {
+  opacity: .9;
+}
+
+.webform-edit-modal[hidden] {
+  display: none !important;
+}
+
+.webform-edit-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.webform-edit-modal__backdrop {
   position: absolute;
-  left: 3px;
-  top: 0;
-  width: 8px;
-  height: 12px;
-  border: 2px solid #fff;
-  border-top: none;
-  border-left: none;
-  transform: rotate(45deg);
+  inset: 0;
+  background: rgba(0, 0, 0, .72);
+  backdrop-filter: blur(4px);
 }
-.consent-wrap span {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.82);
-  line-height: 1.5;
-}
-.consent-wrap a {
-  color: #fff;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-.consent-wrap a:hover { opacity: 0.75; }
 
-/* ── 5. Пол: radio в одну строку ─────────────────────────────── */
-/* JS строит label > input[radio] + span; стилизуем */
-.gender-radio-label input[type="radio"] {
-  accent-color: #27ae60;
+.webform-edit-modal__dialog {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 680px);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  box-sizing: border-box;
+  padding: clamp(22px, 4vw, 34px);
+  border-radius: 18px;
+  background: #111827;
+  border: 1px solid rgba(255, 255, 255, .16);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .45);
+  color: #fff;
+}
+
+.webform-edit-modal__dialog h3 {
+  margin: 0 44px 8px 0;
+  font-size: clamp(24px, 4vw, 32px);
+  line-height: 1.2;
+}
+
+.webform-edit-modal__text {
+  margin: 0 0 18px;
+  color: #d1d5db;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.webform-edit-modal__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .1);
+  color: #fff;
+  font-size: 28px;
+  line-height: 1;
   cursor: pointer;
 }
-.gender-radio-label:hover span {
-  color: #fff;
-  opacity: 0.9;
+
+.webform-edit-modal__close:hover {
+  background: rgba(255, 87, 34, .9);
 }
 
-/* ── 6. Языки: вертикальный список radio ─────────────────────── */
-.lang-radio-label input[type="radio"] {
-  accent-color: #27ae60;
+.webform-edit-modal-form {
+  margin-top: 12px;
+}
+
+.webform-edit-modal .webform-field select,
+.webform-edit-modal .webform-field input[type="date"],
+.webform-edit-modal .webform-form input,
+.webform-edit-modal .webform-form textarea {
+  background: #0b1220;
+}
+
+.webform-edit-modal__actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.webform-edit-modal__secondary {
+  border: 1px solid rgba(255, 255, 255, .24);
+  border-radius: 10px;
+  padding: 16px 18px;
+  background: transparent;
+  color: #fff;
+  font-family: inherit;
+  font-weight: 700;
   cursor: pointer;
 }
-.lang-radio-label:hover span {
-  opacity: 0.9;
-}
-/* Скроллбар для длинного списка */
-#lang-chips::-webkit-scrollbar,
-#edit-lang-chips::-webkit-scrollbar { width: 4px; }
-#lang-chips::-webkit-scrollbar-thumb,
-#edit-lang-chips::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.3);
-  border-radius: 4px;
+
+.webform-edit-modal__secondary:hover {
+  border-color: #ff5722;
+  color: #ffb199;
 }
 
-/* ── 7. Статусы ──────────────────────────────────────────────── */
-.status--success {
-  background: rgba(39, 174, 96, 0.15);
-  color: #d4fde4;
-  border: 1px solid rgba(39, 174, 96, 0.35);
-  border-radius: 6px;
-  padding: 8px 12px;
-  font-size: 14px;
+body.webform-edit-modal-open {
+  overflow: hidden;
 }
-.status--error {
-  background: rgba(231, 76, 60, 0.12);
-  color: #ffe0e0;
-  border: 1px solid rgba(231, 76, 60, 0.35);
-  border-radius: 6px;
-  padding: 8px 12px;
-  font-size: 14px;
+
+@media (max-width: 640px) {
+  .webform-edit-modal {
+    padding: 12px;
+    align-items: flex-start;
+  }
+
+  .webform-edit-modal__dialog {
+    max-height: calc(100vh - 24px);
+  }
+
+  .webform-edit-modal__actions {
+    grid-template-columns: 1fr;
+  }
 }
