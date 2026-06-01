@@ -176,7 +176,7 @@ $csrf = admin_csrf_token();
             font-size: 28px;
         }
         .admin-link {
-            color: #f28c00;
+            color: #c47f1e;
             text-decoration: none;
             font-weight: 700;
         }
@@ -243,7 +243,7 @@ $csrf = admin_csrf_token();
             font-weight: 700;
         }
         .save-btn {
-            background: #f28c00;
+            background: #51df26;
             color: #fff;
         }
         .delete-btn {

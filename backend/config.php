@@ -1,11 +1,10 @@
 <?php
+
 const DB_HOST = 'localhost';
 const DB_NAME = 'webproj8';
 const DB_USER = 'root';
 const DB_PASS = 'Nifi753159Q*';
-
 const RECAPTCHA_SECRET = '';
-
 const ADMIN_REALM = 'WebProject admin panel';
 
 function db(): PDO
